@@ -10,7 +10,7 @@
 """
 HTTP API for the Swiss Ephemeris computation core (AGPL-3.0).
 
-Endpoints (all generic astronomy — no product logic):
+Endpoints:
   GET  /health
   GET  /source            — AGPL §13 source offer
   POST /v1/positions      — sidereal body positions

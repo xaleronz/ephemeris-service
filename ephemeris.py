@@ -12,13 +12,8 @@
 # details. You should have received a copy of the GNU AGPL along with this
 # program. If not, see <https://www.gnu.org/licenses/>.
 """
-Generic astronomical primitives via pyswisseph — the isolated AGPL surface.
-
-This module deliberately contains **only** standard astronomy: sidereal body
-positions, house cusps, and rise/set times. There is no application logic,
-interpretation, or product content here. A consumer application talks to this
-service over HTTP and never links Swiss Ephemeris itself — keeping the copyleft
-dependency behind a network boundary so the consumer can stay a separate work.
+Astronomical primitives via pyswisseph: sidereal body positions, house cusps,
+and rise/set times.
 
 Lahiri ayanamsa + Whole-Sign houses are the default conventions; they are
 applied here so callers receive ready-to-use sidereal numbers.
