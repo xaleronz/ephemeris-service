@@ -24,6 +24,7 @@ service is open — fine for a private network, set it for anything public.
 
 from __future__ import annotations
 
+import hmac
 import os
 from contextlib import asynccontextmanager
 from typing import Dict, List, Optional
@@ -50,7 +51,7 @@ app = FastAPI(title="ephemeris-service", version="1.0.0", lifespan=lifespan)
 
 def require_key(x_ephemeris_key: Optional[str] = Header(default=None)) -> None:
     expected = os.getenv("EPHEMERIS_API_KEY", "").strip()
-    if expected and x_ephemeris_key != expected:
+    if expected and not hmac.compare_digest(x_ephemeris_key or "", expected):
         raise HTTPException(status_code=401, detail="Invalid ephemeris key")
 
 
