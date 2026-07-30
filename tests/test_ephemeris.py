@@ -44,6 +44,47 @@ def test_positions_match_swisseph_exactly():
     assert abs(sun[3] - expected_sun[3]) < 1e-9       # longitude speed (retro sign)
 
 
+def test_positions_batch_equals_per_moment_singles():
+    """The batch endpoint must return exactly what calling /v1/positions per
+    moment returns, in order — that equivalence is what lets callers collapse
+    many round-trips into one without changing any result."""
+    moments = [
+        {"jd_ut": J, "bodies": [swe.SUN, swe.MOON]},
+        {"jd_ut": J + 55.0, "bodies": [swe.MARS]},
+        {"jd_ut": J, "bodies": [swe.SUN, swe.MOON, swe.MARS]},
+    ]
+
+    batch = client.post("/v1/positions/batch", json={"moments": moments})
+    assert batch.status_code == 200
+    results = batch.json()["results"]
+    assert len(results) == len(moments)
+
+    for moment, got in zip(moments, results):
+        single = client.post("/v1/positions", json=moment).json()["positions"]
+        assert got == single
+
+
+def test_positions_batch_rejects_empty_and_oversized():
+    assert client.post("/v1/positions/batch", json={"moments": []}).status_code == 422
+    too_many = {"moments": [{"jd_ut": J, "bodies": [swe.SUN]}] * 401}
+    assert client.post("/v1/positions/batch", json=too_many).status_code == 422
+
+
+def test_positions_rejects_oversized_bodies_list():
+    # Amplification guard: a single moment can't request an unbounded body list.
+    huge = {"jd_ut": J, "bodies": [swe.SUN] * 33}
+    assert client.post("/v1/positions", json=huge).status_code == 422
+
+
+def test_body_size_limit_rejects_oversized_request():
+    # Transport-level DoS guard (256 KB). A batch padded past the cap is 413'd
+    # before any calculation runs.
+    padded = {"moments": [{"jd_ut": J + i * 1e-6, "bodies": [swe.SUN]} for i in range(400)],
+              "junk": "x" * (300 * 1024)}
+    r = client.post("/v1/positions/batch", json=padded)
+    assert r.status_code == 413
+
+
 def test_houses_match_swisseph_exactly():
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     _cusps, ascmc_e = swe.houses_ex(J, 28.6, 77.2, b"W", swe.FLG_SIDEREAL)

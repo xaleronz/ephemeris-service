@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run tests
+        # Cross-check tests assert HTTP results match a direct swisseph call to
+        # 1e-9, so a wrong build (or drift) fails here rather than in production.
+        run: pytest tests/ -q
+
+  # The Dockerfile is the production artifact (multi-stage build of pyswisseph);
+  # build it on every push so it can't rot unnoticed.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build production image
+        run: docker build -t ephemeris-service:ci .
